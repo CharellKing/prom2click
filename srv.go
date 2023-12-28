@@ -1,6 +1,9 @@
 package main
 
 import (
+	"encoding/json"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/prometheus/prometheus/prompb"
 	"io/ioutil"
 	"net/http"
 	"time"
@@ -11,7 +14,6 @@ import (
 	"github.com/golang/snappy"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/common/model"
-	"github.com/prometheus/prometheus/storage/remote"
 	"gopkg.in/tylerb/graceful.v1"
 )
 
@@ -71,7 +73,7 @@ func NewP2CServer(conf *config) (*p2cServer, error) {
 			return
 		}
 
-		var req remote.WriteRequest
+		var req prompb.WriteRequest
 		if err := proto.Unmarshal(reqBuf, &req); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
@@ -93,13 +95,13 @@ func NewP2CServer(conf *config) (*p2cServer, error) {
 			return
 		}
 
-		var req remote.ReadRequest
-		if err := proto.Unmarshal(reqBuf, &req); err != nil {
+		var req prompb.ReadRequest
+		if err := json.Unmarshal(reqBuf, &req); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 
-		var resp *remote.ReadResponse
+		var resp *prompb.ReadResponse
 		resp, err = c.reader.Read(&req)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -122,14 +124,12 @@ func NewP2CServer(conf *config) (*p2cServer, error) {
 		}
 	})
 
-	c.mux.Handle(c.conf.HTTPMetricsPath, prometheus.InstrumentHandler(
-		c.conf.HTTPMetricsPath, prometheus.UninstrumentedHandler(),
-	))
+	c.mux.Handle(c.conf.HTTPMetricsPath, promhttp.Handler())
 
 	return c, nil
 }
 
-func (c *p2cServer) process(req remote.WriteRequest) {
+func (c *p2cServer) process(req prompb.WriteRequest) {
 	for _, series := range req.Timeseries {
 		c.rx.Add(float64(len(series.Samples)))
 		var (
@@ -151,7 +151,7 @@ func (c *p2cServer) process(req remote.WriteRequest) {
 		for _, sample := range series.Samples {
 			p2c := new(p2cRequest)
 			p2c.name = name
-			p2c.ts = time.Unix(sample.TimestampMs/1000, 0)
+			p2c.ts = time.Unix(sample.Timestamp/1000, 0)
 			p2c.val = sample.Value
 			p2c.tags = tags
 			c.requests <- p2c
