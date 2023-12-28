@@ -1,4 +1,4 @@
-module prom2click
+module github.com/CharellKing/prom2click
 
 go 1.21.0
 
