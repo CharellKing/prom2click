@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"sort"
 	"time"
@@ -32,6 +33,10 @@ func NewP2CWriter(conf *config, reqs chan *p2cRequest) (*p2cWriter, error) {
 	w := new(p2cWriter)
 	w.conf = conf
 	w.requests = reqs
+
+	confBytes, _ := json.Marshal(conf)
+	fmt.Printf("conf: %+v\n", string(confBytes))
+
 	w.db, err = sql.Open("clickhouse", w.conf.ChDSN)
 	if err != nil {
 		fmt.Printf("Error connecting to clickhouse: %s\n", err.Error())
