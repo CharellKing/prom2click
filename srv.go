@@ -19,10 +19,10 @@ import (
 )
 
 type p2cRequest struct {
-	name string
-	tags []string
-	val  float64
-	ts   time.Time
+	name string    `json:"name"`
+	tags []string  `json:"tags"`
+	val  float64   `json:"val"`
+	ts   time.Time `json:"ts"`
 }
 
 type p2cServer struct {
