@@ -2,7 +2,6 @@ package main
 
 import (
 	"database/sql"
-	"encoding/json"
 	"fmt"
 	"sort"
 	"time"
@@ -107,8 +106,7 @@ func (w *p2cWriter) Start() {
 			}
 
 			for i := 0; i < nmetrics; i++ {
-				data, _ := json.Marshal(reqs[i])
-				fmt.Printf("req: %+v\n", string(data))
+				fmt.Printf("req: %+v, %+v, %+v, %+v\n", reqs[i].name, reqs[i].tags, reqs[i].ts, reqs[i].val)
 			}
 
 			// post them to db all at once
