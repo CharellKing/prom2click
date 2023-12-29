@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"github.com/moul/http2curl"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/prometheus/prometheus/prompb"
 	"io/ioutil"
@@ -66,6 +67,9 @@ func NewP2CServer(conf *config) (*p2cServer, error) {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
+
+		command, _ := http2curl.GetCurlCommand(r)
+		fmt.Println("================", command)
 
 		reqBuf, err := snappy.Decode(nil, compressed)
 		if err != nil {

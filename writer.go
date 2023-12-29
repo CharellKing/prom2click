@@ -37,7 +37,7 @@ func NewP2CWriter(conf *config, reqs chan *p2cRequest) (*p2cWriter, error) {
 		fmt.Printf("Error connecting to clickhouse: %s\n", err.Error())
 		return w, err
 	}
-
+	w.db.SetConnMaxLifetime(3000 * time.Second)
 	w.tx = prometheus.NewCounter(
 		prometheus.CounterOpts{
 			Name: "sent_samples_total",
