@@ -5,11 +5,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"sort"
+	"strings"
 	"time"
 
+	_ "github.com/ClickHouse/clickhouse-go"
 	"sync"
 
-	clickhouse "github.com/ClickHouse/clickhouse-go"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -134,7 +135,7 @@ func (w *p2cWriter) Start() {
 				// ensure tags are inserted in the same order each time
 				// possibly/probably impacts indexing?
 				sort.Strings(req.tags)
-				_, err = smt.Exec(req.ts, req.name, clickhouse.Array(req.tags),
+				_, err = smt.Exec(req.ts, req.name, strings.Join(req.tags, ","),
 					req.val, req.ts)
 
 				if err != nil {
