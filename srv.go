@@ -77,6 +77,8 @@ func NewP2CServer(conf *config) (*p2cServer, error) {
 			return
 		}
 
+		fmt.Printf("request================%s\n", string(reqBuf))
+
 		var req prompb.WriteRequest
 		if err := proto.Unmarshal(reqBuf, &req); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
