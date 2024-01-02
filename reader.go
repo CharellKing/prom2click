@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/prometheus/prometheus/prompb"
-	"github.com/prometheus/prometheus/promql/parser"
 	"strings"
 
 	"github.com/prometheus/common/model"
@@ -70,13 +69,13 @@ func (r *p2cReader) getSQL(query *prompb.Query) (string, error) {
 		if m.Name == model.MetricNameLabel {
 			var whereAdd string
 			switch m.Type {
-			case parser.EQL:
+			case prompb.LabelMatcher_EQ:
 				whereAdd = fmt.Sprintf(` name='%s' `, strings.Replace(m.Value, `'`, `\'`, -1))
-			case parser.NEQ:
+			case prompb.LabelMatcher_NEQ:
 				whereAdd = fmt.Sprintf(` name!='%s' `, strings.Replace(m.Value, `'`, `\'`, -1))
-			case parser.EQL_REGEX:
+			case prompb.LabelMatcher_RE:
 				whereAdd = fmt.Sprintf(` match(name, %s) = 1 `, strings.Replace(m.Value, `/`, `\/`, -1))
-			case parser.NEQ_REGEX:
+			case prompb.LabelMatcher_NRE:
 				whereAdd = fmt.Sprintf(` match(name, %s) = 0 `, strings.Replace(m.Value, `/`, `\/`, -1))
 			}
 			mwhereSQL = append(mwhereSQL, whereAdd)
@@ -84,7 +83,7 @@ func (r *p2cReader) getSQL(query *prompb.Query) (string, error) {
 		}
 
 		switch m.Type {
-		case parser.EQL:
+		case prompb.LabelMatcher_EQ:
 			var insql bytes.Buffer
 			asql := "arrayExists(x -> x IN (%s), tags) = 1"
 			// value appears to be | sep'd for multiple matches
@@ -103,7 +102,7 @@ func (r *p2cReader) getSQL(query *prompb.Query) (string, error) {
 			wstr := fmt.Sprintf(asql, insql.String())
 			mwhereSQL = append(mwhereSQL, wstr)
 
-		case parser.NEQ:
+		case prompb.LabelMatcher_NEQ:
 			var insql bytes.Buffer
 			asql := "arrayExists(x -> x IN (%s), tags) = 0"
 			// value appears to be | sep'd for multiple matches
@@ -122,7 +121,7 @@ func (r *p2cReader) getSQL(query *prompb.Query) (string, error) {
 			wstr := fmt.Sprintf(asql, insql.String())
 			mwhereSQL = append(mwhereSQL, wstr)
 
-		case parser.EQL_REGEX:
+		case prompb.LabelMatcher_RE:
 			asql := `arrayExists(x -> 1 == match(x, '^%s=%s'),tags) = 1`
 			// we can't have ^ in the regexp since keys are stored in arrays of key=value
 			if strings.HasPrefix(m.Value, "^") {
@@ -134,7 +133,7 @@ func (r *p2cReader) getSQL(query *prompb.Query) (string, error) {
 				mwhereSQL = append(mwhereSQL, fmt.Sprintf(asql, m.Name, val))
 			}
 
-		case parser.NEQ_REGEX:
+		case prompb.LabelMatcher_NRE:
 			asql := `arrayExists(x -> 1 == match(x, '^%s=%s'),tags) = 0`
 			if strings.HasPrefix(m.Value, "^") {
 				val := strings.Replace(m.Value, "^", "", 1)

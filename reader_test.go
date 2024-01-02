@@ -32,8 +32,19 @@ func TestReader(t *testing.T) {
 	req := &prompb.ReadRequest{
 		Queries: []*prompb.Query{
 			{
-				StartTimestampMs: time.Now().Add(-5 * time.Hour).UnixMilli(),
-				EndTimestampMs:   time.Now().UnixMilli(),
+				StartTimestampMs: 1704196978901,
+				EndTimestampMs:   1704197278901,
+				Matchers: []*prompb.LabelMatcher{
+					{
+						Type:  prompb.LabelMatcher_EQ,
+						Name:  "__name__",
+						Value: "go_gc_duration_seconds",
+					},
+				},
+				Hints: &prompb.ReadHints{
+					StartMs: 1704196978901,
+					EndMs: 1704197278901,
+				},
 			},
 		},
 	}
