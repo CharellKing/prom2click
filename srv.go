@@ -95,7 +95,7 @@ func NewP2CServer(conf *config) (*p2cServer, error) {
 			return
 		}
 
-		fmt.Printf("read=========1.1.0 unmarshal, %+v\n", string(reqBuf))
+		fmt.Printf("read=========1.1.0 proto unmarshal, %+v\n", string(reqBuf))
 
 		var req prompb.ReadRequest
 		if err := proto.Unmarshal(reqBuf, &req); err != nil {
