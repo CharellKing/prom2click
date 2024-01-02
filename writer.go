@@ -4,12 +4,10 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"sort"
-	"strings"
-	"time"
-
 	_ "github.com/ClickHouse/clickhouse-go"
+	"sort"
 	"sync"
+	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 )
@@ -43,7 +41,7 @@ func NewP2CWriter(conf *config, reqs chan *p2cRequest) (*p2cWriter, error) {
 		fmt.Printf("Error connecting to clickhouse: %s\n", err.Error())
 		return w, err
 	}
-	w.db.SetConnMaxLifetime(3000 * time.Second)
+
 	w.tx = prometheus.NewCounter(
 		prometheus.CounterOpts{
 			Name: "sent_samples_total",
@@ -135,7 +133,8 @@ func (w *p2cWriter) Start() {
 				// ensure tags are inserted in the same order each time
 				// possibly/probably impacts indexing?
 				sort.Strings(req.tags)
-				_, err = smt.Exec(req.ts, req.name, strings.Join(req.tags, ","),
+				tagsBytes, _ := json.Marshal(req.tags)
+				_, err = smt.Exec(req.ts, req.name, string(tagsBytes),
 					req.val, req.ts)
 
 				if err != nil {
