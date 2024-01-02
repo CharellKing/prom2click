@@ -1,7 +1,6 @@
 package main
 
 import (
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/prometheus/prometheus/prompb"
 	"io/ioutil"
 	"net/http"
@@ -129,8 +128,6 @@ func NewP2CServer(conf *config) (*p2cServer, error) {
 			return
 		}
 	})
-
-	c.mux.Handle(c.conf.HTTPMetricsPath, promhttp.Handler())
 
 	return c, nil
 }
