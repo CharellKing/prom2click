@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/prometheus/prometheus/prompb"
@@ -181,29 +182,30 @@ func (r *p2cReader) Read(req *prompb.ReadRequest) (*prompb.ReadResponse, error) 
 
 	// for debugging/figuring out query format/etc
 	rcount := 0
-	for _, q := range req.Queries {
+	for idx, q := range req.Queries {
 		// remove me..
-		fmt.Printf("\nquery: start: %d, end: %d\n\n", q.StartTimestampMs, q.EndTimestampMs)
+		fmt.Printf("\n======1.3.%d query: start: %d, end: %d\n", idx, q.StartTimestampMs, q.EndTimestampMs)
 
 		// get the select sql
 		sqlStr, err = r.getSQL(q)
-		fmt.Printf("query: running sql: %s\n\n", sqlStr)
+		fmt.Printf("=========1.4.%d query: running sql: %s\n", idx, sqlStr)
 		if err != nil {
-			fmt.Printf("Error: reader: getSQL: %s\n", err.Error())
+			fmt.Printf("=========1.5.%d Error: reader: getSQL: %s\n", idx, err.Error())
 			return &resp, err
 		}
 
 		// get the select sql
 		if err != nil {
-			fmt.Printf("Error: reader: getSQL: %s\n", err.Error())
+			fmt.Printf("===========1.6.%d Error: reader: getSQL: %s\n", idx, err.Error())
 			return &resp, err
 		}
 
 		// todo: metrics on number of errors, rows, selects, timings, etc
+		fmt.Printf("===========1.7.%d Query: %s\n", idx, err.Error())
 		rows, err = r.db.Query(sqlStr)
 		if err != nil {
-			fmt.Printf("Error: query failed: %s", sqlStr)
-			fmt.Printf("Error: query error: %s\n", err)
+			fmt.Printf("=========1.8.%d Error: query failed: %+v\n", idx, sqlStr)
+			fmt.Printf("=========1.9.%d Error: query error: %+v\n", idx, err)
 			return &resp, err
 		}
 
@@ -215,24 +217,30 @@ func (r *p2cReader) Read(req *prompb.ReadRequest) (*prompb.ReadResponse, error) 
 				cnt   int
 				t     int64
 				name  string
-				tags  []string
+				tags  string
 				value float64
 			)
+			fmt.Printf("=========2.0.%d scan\n", idx)
 			if err = rows.Scan(&cnt, &t, &name, &tags, &value); err != nil {
-				fmt.Printf("Error: scan: %s\n", err.Error())
+				fmt.Printf("=========2.1.%d Error: scan: %s\n", idx, err.Error())
 			}
 			// remove this..
 			//fmt.Printf(fmt.Sprintf("%d,%d,%s,%s,%f\n", cnt, t, name, strings.Join(tags, ":"), value))
-
 			// borrowed from influx remote storage adapter - array sep
-			key := strings.Join(tags, "\xff")
+			var tagsArray []string
+			fmt.Printf("=========2.2.%d unmarshal tags\n", idx)
+			json.Unmarshal([]byte(tags), &tagsArray)
+			key := strings.Join(tagsArray, "\xff")
+			fmt.Printf("=========2.3.%d join tags\n", idx)
 			ts, ok := tsres[key]
+			fmt.Printf("=========2.4.%d key=%s ok=%v ts=%vjoin tags\n", idx, key, ok, ts)
 			if !ok {
 				ts = &prompb.TimeSeries{
-					Labels: makeLabels(tags),
+					Labels: makeLabels(tagsArray),
 				}
 				tsres[key] = ts
 			}
+			fmt.Printf("=========2.5.%d value=%+v t=%+v\n", idx, value, t)
 			ts.Samples = append(ts.Samples, prompb.Sample{
 				Value:     float64(value),
 				Timestamp: t,
