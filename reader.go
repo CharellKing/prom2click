@@ -201,7 +201,7 @@ func (r *p2cReader) Read(req *prompb.ReadRequest) (*prompb.ReadResponse, error) 
 		}
 
 		// todo: metrics on number of errors, rows, selects, timings, etc
-		fmt.Printf("read===========1.7.%d Query: %s\n", idx, err.Error())
+		fmt.Printf("read===========1.7.%d Query sqlStr: %s\n", idx, sqlStr)
 		rows, err = r.db.Query(sqlStr)
 		if err != nil {
 			fmt.Printf("read=========1.8.%d Error: query failed: %+v\n", idx, sqlStr)
