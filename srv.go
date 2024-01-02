@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/prometheus/prometheus/prompb"
 	"io/ioutil"
@@ -99,7 +98,7 @@ func NewP2CServer(conf *config) (*p2cServer, error) {
 		fmt.Printf("read=========1.1.0 unmarshal, %+v\n", string(reqBuf))
 
 		var req prompb.ReadRequest
-		if err := json.Unmarshal(reqBuf, &req); err != nil {
+		if err := proto.Unmarshal(reqBuf, &req); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
