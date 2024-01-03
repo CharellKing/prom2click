@@ -129,9 +129,7 @@ func (w *p2cWriter) Start() {
 				// ensure tags are inserted in the same order each time
 				// possibly/probably impacts indexing?
 				sort.Strings(req.tags)
-				tagsBytes, _ := json.Marshal(req.tags)
-				_, err = smt.Exec(req.ts, req.name, string(tagsBytes),
-					req.val, req.ts)
+				_, err := smt.Exec(req.ts, req.name, req.tags, req.val, req.ts)
 				if err != nil {
 					fmt.Printf("Error: statement exec: %s\n", err.Error())
 					w.ko.Add(1.0)

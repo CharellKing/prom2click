@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"database/sql"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/prometheus/prometheus/prompb"
@@ -216,7 +215,7 @@ func (r *p2cReader) Read(req *prompb.ReadRequest) (*prompb.ReadResponse, error) 
 				cnt   int
 				t     int64
 				name  string
-				tags  string
+				tags  []string
 				value float64
 			)
 			fmt.Printf("read=========2.0.%d scan\n", idx)
@@ -226,16 +225,13 @@ func (r *p2cReader) Read(req *prompb.ReadRequest) (*prompb.ReadResponse, error) 
 			// remove this..
 			//fmt.Printf(fmt.Sprintf("%d,%d,%s,%s,%f\n", cnt, t, name, strings.Join(tags, ":"), value))
 			// borrowed from influx remote storage adapter - array sep
-			var tagsArray []string
-			fmt.Printf("read=========2.2.%d unmarshal tags\n", idx)
-			json.Unmarshal([]byte(tags), &tagsArray)
-			key := strings.Join(tagsArray, "\xff")
+			key := strings.Join(tags, "\xff")
 			fmt.Printf("read=========2.3.%d join tags\n", idx)
 			ts, ok := tsres[key]
 			fmt.Printf("read=========2.4.%d key=%s ok=%v ts=%vjoin tags\n", idx, key, ok, ts)
 			if !ok {
 				ts = &prompb.TimeSeries{
-					Labels: makeLabels(tagsArray),
+					Labels: makeLabels(tags),
 				}
 				tsres[key] = ts
 			}
