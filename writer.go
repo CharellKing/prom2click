@@ -111,19 +111,17 @@ func (w *p2cWriter) Start() {
 
 			// post them to db all at once
 			tx, err := w.db.Begin()
-			fmt.Printf("=========1.1 begin\n")
 			if err != nil {
 				fmt.Printf("Error: begin transaction: %s\n", err.Error())
 				w.ko.Add(1.0)
 				continue
 			}
-			fmt.Printf("=========1.2 prepare\n")
 
 			// build statements
 			smt, err := tx.Prepare(sql)
-			for idx, req := range reqs {
+			for _, req := range reqs {
 				if err != nil {
-					fmt.Printf("======1.3.%dError: prepare statement: %s\n", idx, err.Error())
+					fmt.Printf("Error: prepare statement: %s\n", err.Error())
 					w.ko.Add(1.0)
 					continue
 				}
@@ -131,31 +129,26 @@ func (w *p2cWriter) Start() {
 				// ensure tags are inserted in the same order each time
 				// possibly/probably impacts indexing?
 				sort.Strings(req.tags)
-				fmt.Printf("=========1.3.%d sort\n", idx)
 				tagsBytes, _ := json.Marshal(req.tags)
-				fmt.Printf("=========1.3.%d marshal\n", idx)
 				_, err = smt.Exec(req.ts, req.name, string(tagsBytes),
 					req.val, req.ts)
-				fmt.Printf("=========1.3.%d exec\n", idx)
 				if err != nil {
-					fmt.Printf("========1.3.%d Error: statement exec: %s\n", idx, err.Error())
+					fmt.Printf("Error: statement exec: %s\n", err.Error())
 					w.ko.Add(1.0)
 				}
 			}
 
-			fmt.Printf("=========1.4 commit\n")
 			// commit and record metrics
 			if err = tx.Commit(); err != nil {
-				fmt.Printf("======1.5 Error: commit failed: %s\n", err.Error())
+				fmt.Printf("Error: commit failed: %s\n", err.Error())
 				w.ko.Add(1.0)
 			} else {
-				fmt.Printf("======1.6 else add nmetrics %f\n", float64(nmetrics))
 				w.tx.Add(float64(nmetrics))
 				w.timings.Observe(float64(time.Since(tstart)))
 			}
 
 		}
-		fmt.Println("======1.7 Writer stopped..")
+		fmt.Println("Writer stopped..")
 		w.wg.Done()
 	}()
 }
