@@ -2,7 +2,6 @@ package main
 
 import (
 	"database/sql"
-	"encoding/json"
 	"fmt"
 	_ "github.com/ClickHouse/clickhouse-go"
 	"sort"
@@ -32,10 +31,6 @@ func NewP2CWriter(conf *config, reqs chan *p2cRequest) (*p2cWriter, error) {
 	w := new(p2cWriter)
 	w.conf = conf
 	w.requests = reqs
-
-	confBytes, _ := json.Marshal(conf)
-	fmt.Printf("conf: %+v\n", string(confBytes))
-
 	w.db, err = sql.Open("clickhouse", w.conf.ChDSN)
 	if err != nil {
 		fmt.Printf("Error connecting to clickhouse: %s\n", err.Error())
@@ -104,7 +99,6 @@ func (w *p2cWriter) Start() {
 
 			// ensure we have something to send..
 			nmetrics := len(reqs)
-			fmt.Printf("metrics numbers %d ....\n", nmetrics)
 			if nmetrics < 1 {
 				continue
 			}

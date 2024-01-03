@@ -87,7 +87,6 @@ func NewP2CServer(conf *config) (*p2cServer, error) {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		fmt.Printf("read=========1.1 decode %+v\n", string(compressed))
 
 		reqBuf, err := snappy.Decode(nil, compressed)
 		if err != nil {
@@ -95,15 +94,12 @@ func NewP2CServer(conf *config) (*p2cServer, error) {
 			return
 		}
 
-		fmt.Printf("read=========1.1.0 proto unmarshal, %+v\n", string(reqBuf))
-
 		var req prompb.ReadRequest
 		if err := proto.Unmarshal(reqBuf, &req); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 
-		fmt.Printf("read=========1.1.1 read, %+v\n", req)
 		var resp *prompb.ReadResponse
 		resp, err = c.reader.Read(&req)
 		if err != nil {
@@ -111,10 +107,7 @@ func NewP2CServer(conf *config) (*p2cServer, error) {
 			return
 		}
 
-		fmt.Printf("read=========1.1.2 marshal, %+v\n", resp)
-
 		data, err := proto.Marshal(resp)
-		fmt.Printf("read=========1.1.3 marshal data, %+v\n", data)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -123,7 +116,6 @@ func NewP2CServer(conf *config) (*p2cServer, error) {
 		w.Header().Set("Content-Type", "application/x-protobuf")
 		w.Header().Set("Content-Encoding", "snappy")
 		compressed = snappy.Encode(nil, data)
-		fmt.Printf("read=========1.1.4 encode data, %+v\n", compressed)
 		if _, err := w.Write(compressed); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return

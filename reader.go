@@ -180,30 +180,25 @@ func (r *p2cReader) Read(req *prompb.ReadRequest) (*prompb.ReadResponse, error) 
 
 	// for debugging/figuring out query format/etc
 	rcount := 0
-	for idx, q := range req.Queries {
+	for _, q := range req.Queries {
 		// remove me..
-		fmt.Printf("\nread======1.3.%d query: start: %d, end: %d\n", idx, q.StartTimestampMs, q.EndTimestampMs)
-
 		// get the select sql
 		sqlStr, err = r.getSQL(q)
-		fmt.Printf("read=========1.4.%d query: running sql: %s\n", idx, sqlStr)
 		if err != nil {
-			fmt.Printf("read=========1.5.%d Error: reader: getSQL: %s\n", idx, err.Error())
+			fmt.Printf("Error: reader: getSQL: %s\n", err.Error())
 			return &resp, err
 		}
 
 		// get the select sql
 		if err != nil {
-			fmt.Printf("read===========1.6.%d Error: reader: getSQL: %s\n", idx, err.Error())
+			fmt.Printf("Error: reader: getSQL: %s\n", err.Error())
 			return &resp, err
 		}
 
 		// todo: metrics on number of errors, rows, selects, timings, etc
-		fmt.Printf("read===========1.7.%d Query sqlStr: %s\n", idx, sqlStr)
 		rows, err = r.db.Query(sqlStr)
 		if err != nil {
-			fmt.Printf("read=========1.8.%d Error: query failed: %+v\n", idx, sqlStr)
-			fmt.Printf("read=========1.9.%d Error: query error: %+v\n", idx, err)
+			fmt.Printf("Error: query error: %+v, sql: %+v\n", err, sqlStr)
 			return &resp, err
 		}
 
@@ -218,24 +213,20 @@ func (r *p2cReader) Read(req *prompb.ReadRequest) (*prompb.ReadResponse, error) 
 				tags  []string
 				value float64
 			)
-			fmt.Printf("read=========2.0.%d scan\n", idx)
 			if err = rows.Scan(&cnt, &t, &name, &tags, &value); err != nil {
-				fmt.Printf("read=========2.1.%d Error: scan: %s\n", idx, err.Error())
+				fmt.Printf("Error: scan: %s\n", err.Error())
 			}
 			// remove this..
 			//fmt.Printf(fmt.Sprintf("%d,%d,%s,%s,%f\n", cnt, t, name, strings.Join(tags, ":"), value))
 			// borrowed from influx remote storage adapter - array sep
 			key := strings.Join(tags, "\xff")
-			fmt.Printf("read=========2.3.%d join tags\n", idx)
 			ts, ok := tsres[key]
-			fmt.Printf("read=========2.4.%d key=%s ok=%v ts=%vjoin tags\n", idx, key, ok, ts)
 			if !ok {
 				ts = &prompb.TimeSeries{
 					Labels: makeLabels(tags),
 				}
 				tsres[key] = ts
 			}
-			fmt.Printf("read=========2.5.%d value=%+v t=%+v\n", idx, value, t)
 			ts.Samples = append(ts.Samples, prompb.Sample{
 				Value:     float64(value),
 				Timestamp: t,
@@ -248,7 +239,7 @@ func (r *p2cReader) Read(req *prompb.ReadRequest) (*prompb.ReadResponse, error) 
 		resp.Results[0].Timeseries = append(resp.Results[0].Timeseries, ts)
 	}
 
-	fmt.Printf("read ===========query: returning %d rows for %d queries\n", rcount, len(req.Queries))
+	fmt.Printf("query: returning %d rows for %d queries\n", rcount, len(req.Queries))
 
 	return &resp, nil
 
